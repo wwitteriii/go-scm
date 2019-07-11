@@ -1,4 +1,4 @@
-# go-scm
+# go-scm rocks
 
 A small library with minimal depenencies for working with Webhooks, Commits, Issues, Pull Requests, Comments, Reviews, Teams and more on multiple git provider:
 
