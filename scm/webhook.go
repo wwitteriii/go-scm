@@ -5,7 +5,9 @@
 package scm
 
 import (
+	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 )
 
@@ -19,6 +21,13 @@ type (
 	// Webhook defines a webhook for repository events.
 	Webhook interface {
 		Repository() Repository
+	}
+
+	// WebhookUnmarshaler wraps Webhook and assigns a type for unmarshalling.
+	// Use this if you need to deserialize Webhooks of uknown concrete type.
+	WebhookUnmarshaler struct {
+		Type    string
+		Webhook Webhook
 	}
 
 	// Label on a PR
@@ -174,3 +183,169 @@ func (h *IssueCommentHook) Repository() Repository       { return h.Repo }
 func (h *PullRequestHook) Repository() Repository        { return h.Repo }
 func (h *PullRequestCommentHook) Repository() Repository { return h.Repo }
 func (h *ReviewCommentHook) Repository() Repository      { return h.Repo }
+
+// MarshalJSON adds a type field to a serialized Webhook so that it can be deserialized into the same concrete type.
+func (wu *WebhookUnmarshaler) MarshalJSON() ([]byte, error) {
+
+	marshaledHook := make(map[string]interface{})
+
+	var genericWebhook interface{}
+	genericWebhook = wu.Webhook
+
+	if _, ok := genericWebhook.(PushHook); ok {
+		marshaledHook["type"] = "pushHook"
+		marshaledHook["webhook"] = wu.Webhook
+		return json.Marshal(marshaledHook)
+	}
+
+	if _, ok := genericWebhook.(BranchHook); ok {
+		marshaledHook["type"] = "branchHook"
+		marshaledHook["webhook"] = wu.Webhook
+		return json.Marshal(marshaledHook)
+	}
+
+	if _, ok := genericWebhook.(DeployHook); ok {
+		marshaledHook["type"] = "deployHook"
+		marshaledHook["webhook"] = wu.Webhook
+		return json.Marshal(marshaledHook)
+	}
+
+	if _, ok := genericWebhook.(TagHook); ok {
+		marshaledHook["type"] = "tagHook"
+		marshaledHook["webhook"] = wu.Webhook
+		return json.Marshal(marshaledHook)
+	}
+
+	if _, ok := genericWebhook.(IssueHook); ok {
+		marshaledHook["type"] = "issueHook"
+		marshaledHook["webhook"] = wu.Webhook
+		return json.Marshal(marshaledHook)
+	}
+
+	if _, ok := genericWebhook.(IssueCommentHook); ok {
+		marshaledHook["type"] = "issueCommentHook"
+		marshaledHook["webhook"] = wu.Webhook
+		return json.Marshal(marshaledHook)
+	}
+
+	if _, ok := genericWebhook.(PullRequestHook); ok {
+		marshaledHook["type"] = "pullRequestHook"
+		marshaledHook["webhook"] = wu.Webhook
+		return json.Marshal(marshaledHook)
+	}
+
+	if _, ok := genericWebhook.(PullRequestCommentHook); ok {
+		marshaledHook["type"] = "pullRequestCommentHook"
+		marshaledHook["webhook"] = wu.Webhook
+		return json.Marshal(marshaledHook)
+	}
+
+	if _, ok := genericWebhook.(ReviewCommentHook); ok {
+		marshaledHook["type"] = "reviewCommentHook"
+		marshaledHook["webhook"] = wu.Webhook
+		return json.Marshal(marshaledHook)
+	}
+
+	return nil, fmt.Errorf("WebhookUnmarshaler.Webhook does not implement a concrete Webhook type")
+}
+
+// UnmarshalJSON supports deserialization of GitEventSpec.ParsedWebhook into a concrete implementation of scm.Webhook
+func (wu *WebhookUnmarshaler) UnmarshalJSON(b []byte) error {
+	var objMap map[string]*json.RawMessage
+	err := json.Unmarshal(b, &objMap)
+	if err != nil {
+		return err
+	}
+
+	var rawMessage *json.RawMessage
+	var webhookMap map[string]string
+	err = json.Unmarshal(*rawMessage, &webhookMap)
+	if err != nil {
+		return err
+	}
+
+	if webhookMap["type"] == "pushHook" {
+
+		var h *PushHook
+		err = json.Unmarshal(*rawMessage, h)
+		if err != nil {
+			return err
+		}
+		wu.Webhook = h
+
+	} else if webhookMap["type"] == "branchHook" {
+
+		var h *BranchHook
+		err = json.Unmarshal(*rawMessage, h)
+		if err != nil {
+			return err
+		}
+		wu.Webhook = h
+
+	} else if webhookMap["type"] == "deployHook" {
+
+		var h *DeployHook
+		err = json.Unmarshal(*rawMessage, h)
+		if err != nil {
+			return err
+		}
+		wu.Webhook = h
+
+	} else if webhookMap["type"] == "tagHook" {
+
+		var h *TagHook
+		err = json.Unmarshal(*rawMessage, h)
+		if err != nil {
+			return err
+		}
+		wu.Webhook = h
+
+	} else if webhookMap["type"] == "issueHook" {
+
+		var h *IssueHook
+		err = json.Unmarshal(*rawMessage, h)
+		if err != nil {
+			return err
+		}
+		wu.Webhook = h
+
+	} else if webhookMap["type"] == "issueCommentHook" {
+
+		var h *IssueHook
+		err = json.Unmarshal(*rawMessage, h)
+		if err != nil {
+			return err
+		}
+		wu.Webhook = h
+
+	} else if webhookMap["type"] == "pullRequestHook" {
+
+		var h *IssueHook
+		err = json.Unmarshal(*rawMessage, h)
+		if err != nil {
+			return err
+		}
+		wu.Webhook = h
+
+	} else if webhookMap["type"] == "pullRequestCommentHook" {
+
+		var h *IssueHook
+		err = json.Unmarshal(*rawMessage, h)
+		if err != nil {
+			return err
+		}
+		wu.Webhook = h
+
+	} else if webhookMap["type"] == "reviewCommentHook" {
+
+		var h *IssueHook
+		err = json.Unmarshal(*rawMessage, h)
+		if err != nil {
+			return err
+		}
+		wu.Webhook = h
+
+	}
+
+	return nil
+}
