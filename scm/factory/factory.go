@@ -56,6 +56,12 @@ func NewClient(driver, serverURL, oauthToken string, opts ...clientOptionFunc) (
 		} else {
 			client = github.NewDefault()
 		}
+    case "github.ford":
+        if serverURL != "" {
+            client, err = github.New(ensureGHEEndpoint(serverURL))
+        } else {
+            client = github.NewDefault()
+        }
 	case "gitlab":
 		if serverURL != "" {
 			client, err = gitlab.New(serverURL)
